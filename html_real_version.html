@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Req Clans - COC Real</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1a1a1a, #2d2d2d); color: #fff; min-height: 100vh; }
+        
+        .header { background: linear-gradient(90deg, #ff6b35, #ff4757, #c44569, #8e44ad); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #ffd700; }
+        .admin-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .admin-btn:hover { background: rgba(255,255,255,0.3); }
+        .admin-btn.active { background: rgba(39, 174, 96, 0.6); }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .title { font-size: 36px; text-align: center; margin: 20px 0; background: linear-gradient(45deg, #ffd700, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .admin-panel { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); display: none; }
+        .admin-panel.show { display: block; }
+        .admin-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .admin-input { padding: 10px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(0,0,0,0.3); color: white; min-width: 180px; }
+        .admin-input:focus { outline: none; border-color: #ffd700; }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.3s; margin: 2px; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-info { background: #3498db; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        
+        .status { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: bold; }
+        .status.success { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
+        .status.error { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .status.info { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+        
+        .table { background: rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; backdrop-filter: blur(10px); }
+        .table-header { background: rgba(255,255,255,0.1); display: grid; grid-template-columns: 60px 2fr 1.5fr 1fr 1fr 80px; padding: 15px 10px; font-weight: bold; }
+        .table-row { display: grid; grid-template-columns: 60px 2fr 1.5fr 1fr 1fr 80px; padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
+        .table-row:hover { background: rgba(255,255,255,0.1); }
+        .table-cell { text-align: center; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        
+        .rank { font-weight: bold; font-size: 18px; color: #ffd700; }
+        .clan-name { font-weight: bold; color: #ffd700; }
+        .clan-tag { font-size: 12px; color: #888; }
+        .leader { color: #ff6b35; }
+        .donations { font-weight: bold; color: #00d2d3; }
+        .received { font-weight: bold; color: #ff4757; }
+        
+        .empty { text-align: center; padding: 40px; color: #888; }
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loading.show { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #ffd700; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .stats { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .stat-card { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; text-align: center; min-width: 100px; }
+        .stat-number { font-size: 20px; font-weight: bold; color: #00d2d3; }
+        .stat-label { font-size: 11px; color: #bbb; }
+        
+        .api-status { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+        .api-status.connected { background: rgba(39, 174, 96, 0.2); }
+        .api-status.error { background: rgba(231, 76, 60, 0.2); }
+        
+        @media (max-width: 768px) {
+            .table-header, .table-row { grid-template-columns: 50px 1fr 1fr 60px; }
+            .table-header .table-cell:nth-child(3), .table-row .table-cell:nth-child(3),
+            .table-header .table-cell:nth-child(5), .table-row .table-cell:nth-child(5) { display: none; }
+            .admin-form { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div style="text-align: center; color: white;">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Conectando con Clash of Clans...</p>
+        </div>
+    </div>
+
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">🏆 TOP REQ CLANS (REAL)</div>
+            <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">⚙️ Admin</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="admin-panel" id="adminPanel">
+            <h3 style="color: #ffd700; margin-bottom: 15px;">🛠️ Panel de Administración</h3>
+            
+            <div class="api-status" id="apiStatus">
+                <div style="font-weight: bold;">🔌 Estado de API: <span id="apiStatusText">Verificando...</span></div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalClans">0</div>
+                    <div class="stat-label">Clanes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDonations">0</div>
+                    <div class="stat-label">Donaciones</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="lastUpdate">---</div>
+                    <div class="stat-label">Última Act.</div>
+                </div>
+            </div>
+
+            <div class="admin-form">
+                <input type="text" class="admin-input" id="clanTag" placeholder="Tag del clan (ej: #2PP)" maxlength="15">
+                <button class="btn btn-primary" onclick="addClan()">➕ Agregar</button>
+                <button class="btn btn-info" onclick="refreshAll()">🔄 Actualizar</button>
+                <button class="btn btn-danger" onclick="clearAll()">🗑️ Limpiar</button>
+                <button class="btn btn-warning" onclick="exportData()">📊 Exportar</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                <button class="btn btn-info" onclick="document.getElementById('importFile').click()">📥 Importar</button>
+            </div>
+            <div id="status"></div>
+        </div>
+
+        <h1 class="title">🏆 Top Req Clans (Datos Reales)</h1>
+
+        <div class="table">
+            <div class="table-header">
+                <div class="table-cell">#</div>
+                <div class="table-cell">Clan</div>
+                <div class="table-cell">Líder</div>
+                <div class="table-cell">Donaciones</div>
+                <div class="table-cell">Recibido</div>
+                <div class="table-cell">Acción</div>
+            </div>
+            <div id="tableBody">
+                <div class="empty">
+                    <h3>🏗️ No hay clanes agregados</h3>
+                    <p>Usa el Panel de Admin para agregar clanes reales de COC</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const CONFIG = {
+            PASSWORD: 'Sòyföx!^#&#&2782',
+            STORAGE_KEY: 'clashClansData',
+            // Cambia esta URL por tu dominio de Netlify cuando lo subas
+            API_URL: 'https://tu-sitio.netlify.app/.netlify/functions/clan-data'
+        };
+
+        let clansData = [];
+        let isAdmin = false;
+
+        // Cargar datos al iniciar
+        window.onload = () => {
+            loadData();
+            renderTable();
+        };
+
+        // Toggle admin panel
+        function toggleAdmin() {
+            if (!isAdmin) {
+                const password = prompt('🔐 Ingresa la contraseña de administrador:');
+                if (password === CONFIG.PASSWORD) {
+                    isAdmin = true;
+                    document.getElementById('adminBtn').classList.add('active');
+                    document.getElementById('adminBtn').textContent = '⚙️ Admin (Activo)';
+                    showStatus('✅ Acceso autorizado', 'success');
+                } else {
+                    showStatus('❌ Contraseña incorrecta', 'error');
+                    return;
+                }
+            }
+            
+            const panel = document.getElementById('adminPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                updateStats();
+                checkApiStatus();
+            }
+        }
+
+        // Verificar estado de API
+        async function checkApiStatus() {
+            const statusDiv = document.getElementById('apiStatus');
+            const statusText = document.getElementById('apiStatusText');
+            
+            try {
+                statusText.textContent = 'Verificando...';
+                statusDiv.className = 'api-status';
+                
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clanTag: '#2PP' }) // Tag de prueba
+                });
+
+                if (response.ok) {
+                    statusText.textContent = 'Conectado ✅';
+                    statusDiv.className = 'api-status connected';
+                } else {
+                    statusText.textContent = 'Error de conexión ❌';
+                    statusDiv.className = 'api-status error';
+                }
+            } catch (error) {
+                statusText.textContent = 'Sin conexión ❌';
+                statusDiv.className = 'api-status error';
+            }
+        }
+
+        // Mostrar status
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 4000);
+        }
+
+        // Mostrar loading
+        function showLoading(show = true) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        // Actualizar estadísticas
+        function updateStats() {
+            const total = clansData.length;
+            const donations = clansData.reduce((sum, clan) => sum + clan.donations, 0);
+            const lastUpd = total > 0 ? new Date().toLocaleTimeString() : '---';
+            
+            document.getElementById('totalClans').textContent = total;
+            document.getElementById('totalDonations').textContent = formatNumber(donations);
+            document.getElementById('lastUpdate').textContent = lastUpd;
+        }
+
+        // Formatear números
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // Obtener datos reales del clan
+        async function fetchClanData(tag) {
+            const cleanTag = tag.startsWith('#') ? tag : `#${tag}`;
+            
+            const response = await fetch(CONFIG.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    clanTag: cleanTag
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Error HTTP: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Agregar clan
+        async function addClan() {
+            const tagInput = document.getElementById('clanTag');
+            const tag = tagInput.value.trim();
+            
+            if (!tag) {
+                showStatus('❌ Ingresa un tag válido', 'error');
+                return;
+            }
+
+            const cleanTag = tag.startsWith('#') ? tag : `#${tag}`;
+            
+            if (clansData.find(clan => clan.tag === cleanTag)) {
+                showStatus('❌ El clan ya existe', 'error');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const clanData = await fetchClanData(tag);
+                clansData.push(clanData);
+                clansData.sort((a, b) => b.donations - a.donations);
+                saveData();
+                renderTable();
+                updateStats();
+                tagInput.value = '';
+                showStatus(`✅ Clan ${clanData.name} agregado (${clanData.donations} donaciones)`, 'success');
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+            showLoading(false);
+        }
+
+        // Actualizar todos los clanes
+        async function refreshAll() {
+            if (clansData.length === 0) {
+                showStatus('❌ No hay clanes para actualizar', 'error');
+                return;
+            }
+
+            showLoading(true);
+            showStatus('🔄 Actualizando clanes desde COC...', 'info');
+            
+            try {
+                for (let i = 0; i < clansData.length; i++) {
+                    const tag = clansData[i].tag;
+                    const updatedData = await fetchClanData(tag);
+                    clansData[i] = updatedData;
+                }
+                
+                clansData.sort((a, b) => b.donations - a.donations);
+                saveData();
+                renderTable();
+                updateStats();
+                showStatus('✅ Todos los clanes actualizados con datos reales', 'success');
+            } catch (error) {
+                showStatus(`❌ Error al actualizar: ${error.message}`, 'error');
+            }
+            showLoading(false);
+        }
+
+        // Eliminar clan
+        function removeClan(tag) {
+            if (confirm('¿Eliminar este clan?')) {
+                clansData = clansData.filter(clan => clan.tag !== tag);
+                saveData();
+                renderTable();
+                updateStats();
+                showStatus('✅ Clan eliminado', 'success');
+            }
+        }
+
+        // Limpiar todos
+        function clearAll() {
+            if (confirm('¿Eliminar todos los clanes? Esta acción no se puede deshacer.')) {
+                clansData = [];
+                saveData();
+                renderTable();
+                updateStats();
+                showStatus('✅ Todos los clanes eliminados', 'success');
+            }
+        }
+
+        // Renderizar tabla
+        function renderTable() {
+            const tableBody = document.getElementById('tableBody');
+            
+            if (clansData.length === 0) {
+                tableBody.innerHTML = `
+                    <div class="empty">
+                        <h3>🏗️ No hay clanes agregados</h3>
+                        <p>Usa el Panel de Admin para agregar clanes reales de COC</p>
+                    </div>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = clansData.map((clan, index) => `
+                <div class="table-row">
+                    <div class="table-cell">
+                        <span class="rank">${index + 1}</span>
+                    </div>
+                    <div class="table-cell">
+                        <div class="clan-name">${clan.name}</div>
+                        <div class="clan-tag">${clan.tag}</div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="leader">${clan.leader}</div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="donations">${formatNumber(clan.donations)}</div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="received">${formatNumber(clan.received)}</div>
+                    </div>
+                    <div class="table-cell">
+                        <button class="btn btn-danger" onclick="removeClan('${clan.tag}')" style="font-size: 12px; padding: 5px 8px;">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Exportar datos
+        function exportData() {
+            const data = {
+                clans: clansData,
+                exported: new Date().toISOString(),
+                version: 'real'
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clash-clans-real-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('✅ Datos reales exportados', 'success');
+        }
+
+        // Importar datos
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.clans && Array.isArray(data.clans)) {
+                        clansData = data.clans;
+                        clansData.sort((a, b) => b.donations - a.donations);
+                        saveData();
+                        renderTable();
+                        updateStats();
+                        showStatus('✅ Datos importados correctamente', 'success');
+                    } else {
+                        showStatus('❌ Formato de archivo inválido', 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error al leer el archivo', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Guardar datos
+        function saveData() {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(clansData));
+        }
+
+        // Cargar datos
+        function loadData() {
+            const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+            if (saved) {
+                try {
+                    clansData = JSON.parse(saved);
+                } catch (error) {
+                    clansData = [];
+                }
+            }
+        }
+
+        // Permitir Enter en el input
+        document.getElementById('clanTag').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addClan();
+        });
+    </script>
+</body>
+</html>
